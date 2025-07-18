@@ -1,61 +1,59 @@
 import { useState, useEffect, useRef } from "react";
 
 const MODELS = [
-  { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo (4k token)" },
-  { value: "gpt-4", label: "GPT-4 (8k token)" },
-  { value: "gpt-4-32k", label: "GPT-4 32k (32k token)" },
+  { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo (ucuz ve hızlı)" },
+  { value: "gpt-4o", label: "GPT-4o (hızlı GPT-4, düşük fiyat)" }
 ];
 
 export default function Home() {
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState(MODELS[0].value);
   const [messages, setMessages] = useState([
-    { role: "system", content: "Sen yardımsever bir asistansın." },
+    { role: "system", content: "Sen yardımsever bir asistansın." }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const bottomRef = useRef(null);
+  const chatEndRef = useRef(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   async function sendMessage() {
-    if (!input.trim()) return;
-    if (apiKey.trim().length < 20) {
-      alert("Lütfen geçerli OpenAI API anahtarınızı girin.");
+    if (!input.trim() || apiKey.trim().length < 20) {
+      alert("API anahtarını ve mesajı doldur!");
       return;
     }
 
-    const newMessages = [...messages, { role: "user", content: input.trim() }];
-    setMessages(newMessages);
+    const updatedMessages = [...messages, { role: "user", content: input.trim() }];
+    setMessages(updatedMessages);
     setInput("");
     setLoading(true);
 
     try {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model,
-          messages: newMessages,
-          max_tokens: 1000,
+          messages: updatedMessages,
           temperature: 0.7,
-        }),
+          max_tokens: 1000
+        })
       });
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (!res.ok) {
-        alert("API Hatası: " + (data.error?.message || "Bilinmeyen hata"));
+      if (!response.ok) {
+        alert("API Hatası: " + (data?.error?.message || "Bilinmeyen hata"));
       } else {
-        setMessages([...newMessages, data.choices[0].message]);
+        setMessages([...updatedMessages, data.choices[0].message]);
       }
     } catch (e) {
-      alert("İstek gönderilirken hata oluştu.");
+      alert("Bağlantı hatası: " + e.message);
     } finally {
       setLoading(false);
     }
@@ -69,122 +67,109 @@ export default function Home() {
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 700,
-        margin: "20px auto",
-        padding: 20,
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <h2>GPT Sohbet (API Key Frontend)</h2>
+    <div style={{ maxWidth: "700px", margin: "20px auto", fontFamily: "Arial, sans-serif", padding: "20px" }}>
+      <h1 style={{ textAlign: "center", color: "#1976d2" }}>GPT Sohbet (Frontend API Key)</h1>
 
-      <label style={{ display: "block", marginBottom: 10 }}>
-        API Anahtarınızı Girin:
+      <div style={{ marginBottom: "10px" }}>
+        <label>API Anahtarınız:</label>
         <input
           type="password"
+          placeholder="sk-..."
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           style={{
             width: "100%",
-            padding: 10,
-            fontSize: 16,
-            marginTop: 5,
-            borderRadius: 6,
+            padding: "10px",
+            fontSize: "16px",
+            borderRadius: "6px",
             border: "1px solid #ccc",
+            marginTop: "5px"
           }}
-          placeholder="sk-xxxxxxx..."
         />
-      </label>
+      </div>
 
-      <label style={{ display: "block", marginBottom: 15 }}>
-        Model Seçin:
+      <div style={{ marginBottom: "15px" }}>
+        <label>Model Seçimi:</label>
         <select
           value={model}
           onChange={(e) => setModel(e.target.value)}
-          style={{ marginLeft: 10, padding: 5, fontSize: 16 }}
+          style={{
+            width: "100%",
+            padding: "10px",
+            fontSize: "16px",
+            borderRadius: "6px",
+            border: "1px solid #ccc",
+            marginTop: "5px"
+          }}
         >
           {MODELS.map((m) => (
-            <option key={m.value} value={m.value}>
-              {m.label}
-            </option>
+            <option key={m.value} value={m.value}>{m.label}</option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <div
-        style={{
-          minHeight: 400,
-          maxHeight: 500,
-          overflowY: "auto",
-          border: "1px solid #ddd",
-          padding: 10,
-          borderRadius: 6,
-          backgroundColor: "#f9f9f9",
-        }}
-      >
-        {messages
-          .filter((m) => m.role !== "system")
-          .map((msg, i) => (
-            <div
-              key={i}
-              style={{
-                textAlign: msg.role === "user" ? "right" : "left",
-                marginBottom: 10,
-              }}
-            >
-              <div
-                style={{
-                  display: "inline-block",
-                  background: msg.role === "user" ? "#1976d2" : "#eee",
-                  color: msg.role === "user" ? "white" : "black",
-                  padding: "8px 12px",
-                  borderRadius: 16,
-                  maxWidth: "80%",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {msg.content}
-              </div>
+      <div style={{
+        minHeight: "400px",
+        maxHeight: "500px",
+        overflowY: "auto",
+        background: "#f9f9f9",
+        padding: "10px",
+        borderRadius: "8px",
+        border: "1px solid #ddd",
+        marginBottom: "15px"
+      }}>
+        {messages.filter(m => m.role !== "system").map((msg, i) => (
+          <div key={i} style={{ textAlign: msg.role === "user" ? "right" : "left", marginBottom: "10px" }}>
+            <div style={{
+              display: "inline-block",
+              background: msg.role === "user" ? "#1976d2" : "#eee",
+              color: msg.role === "user" ? "white" : "black",
+              padding: "10px 15px",
+              borderRadius: "16px",
+              maxWidth: "80%",
+              whiteSpace: "pre-wrap"
+            }}>
+              {msg.content}
             </div>
-          ))}
-        <div ref={bottomRef} />
+          </div>
+        ))}
+        <div ref={chatEndRef} />
       </div>
 
       <textarea
-        rows={3}
+        rows="3"
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Mesajınızı yazın, Enter ile gönderin, Shift+Enter yeni satır"
+        placeholder="Mesajınızı yazın, Enter ile gönderin..."
+        disabled={loading}
         style={{
           width: "100%",
-          marginTop: 10,
-          padding: 10,
-          fontSize: 16,
-          borderRadius: 6,
+          fontSize: "16px",
+          padding: "10px",
+          borderRadius: "6px",
           border: "1px solid #ccc",
-          resize: "vertical",
+          resize: "vertical"
         }}
-        disabled={loading}
       />
 
       <button
         onClick={sendMessage}
-        disabled={loading || !input.trim()}
+        disabled={loading}
         style={{
-          marginTop: 10,
-          padding: "10px 20px",
-          fontSize: 16,
-          borderRadius: 6,
-          border: "none",
-          backgroundColor: "#1976d2",
+          marginTop: "10px",
+          width: "100%",
+          background: "#1976d2",
           color: "white",
-          cursor: loading ? "wait" : "pointer",
+          fontSize: "18px",
+          padding: "12px",
+          border: "none",
+          borderRadius: "8px",
+          cursor: loading ? "not-allowed" : "pointer"
         }}
       >
         {loading ? "Gönderiliyor..." : "Gönder"}
       </button>
     </div>
   );
-}
+            }
